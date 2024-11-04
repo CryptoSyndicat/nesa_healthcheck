@@ -8,11 +8,11 @@ check_memory_usage() {
     # Получение использования памяти процессом uvicorn в килобайтах
     USED_MEM=$(ps -o rss= -p $(pgrep -f 'uvicorn') | awk '{s+=$1} END {print s}')
 
-    # Если нет использования памяти, вернуть 0
-    if [[ -z "$USED_MEM" || "$TOTAL_MEM" -le 0 ]]; then
-        echo "0"
-        return
-    fi
+#    # Если нет использования памяти, вернуть 0
+#    if [[ -z "$USED_MEM" || "$TOTAL_MEM" -le 0 ]]; then
+#        echo "0"
+#        return
+#    fi
 
     # Преобразуем использование памяти в мегабайты
     USED_MEM_MB=$((USED_MEM / 1024))
@@ -23,18 +23,20 @@ check_memory_usage() {
     echo "$PERCENTAGE"
 }
 
-while true; do
-    # Получение текущего процентного использования памяти
-    USAGE=$(check_memory_usage)
-    echo $(date +"%d %b %H:%M:%S") "Memory usage: $USAGE%"
+while check_memory_usage
+do
 
-    # Проверка, если использование памяти более 80%
-    if (( $(echo "$USAGE > 80" | bc -l) )); then
-        echo $(date +"%d %b %H:%M:%S") "(Warning) Memory usage by uvicorn is above 80%. Restarting orchestrator!" >> /root/nesa.log
-        echo $(date +"%d %b %H:%M:%S") "Warning!!!"
-        docker restart orchestrator
-    fi
-    
-    # Ожидание 30 секунд перед следующей проверкой
-    sleep 30
+# Получение текущего процентного использования памяти
+USAGE=$(check_memory_usage)
+#echo $(date +"%d %b %H:%M:%S") Memory usage: $USAGE% >> /root/nesa.log
+
+# Проверка, если использование памяти более 25%
+if (( $(echo "$USAGE > 80" | bc -l) )); then
+    echo $(date +"%d %b %H:%M:%S") "(Warning) Memory usage by uvicorn is above 50%. Restarting orchestrator!" >> /root/nesa.log
+    echo $(date +"%d %b %H:%M:%S") "Warning!!!"
+    docker restart orchestrator
+else
+#    echo $(date +"%d %b %H:%M:%S") Memory usage: $USAGE%
+    sleep 30	
+fi
 done
